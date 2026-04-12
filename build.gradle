@@ -46,3 +46,9 @@ dependencies {
 tasks.named('test') {
 	useJUnitPlatform()
 }
+
+tasks.register('startupBenchmark', Exec) {
+	group = 'verification'
+	description = 'Runs startup benchmarks for dev-fast and portfolio profiles.'
+	commandLine 'powershell', '-ExecutionPolicy', 'Bypass', '-File', 'scripts/benchmark-startup.ps1'
+}
