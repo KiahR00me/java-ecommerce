@@ -43,6 +43,11 @@ public class OrderService {
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found: " + orderId));
     }
 
+    public Long findCustomerIdByOrderId(Long orderId) {
+        return orderRepository.findCustomerIdByOrderId(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found: " + orderId));
+    }
+
     @Transactional
     public CustomerOrder checkout(Long customerId) {
         Customer customer = customerRepository.findById(customerId)

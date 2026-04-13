@@ -1,5 +1,6 @@
 package com.java.ecommerce.order;
 
+import com.java.ecommerce.common.CustomerAccessGuard;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.http.HttpStatus;
@@ -18,24 +19,30 @@ import java.util.List;
 public class OrderController {
 
     private final OrderService orderService;
+    private final CustomerAccessGuard customerAccessGuard;
 
-    public OrderController(OrderService orderService) {
+    public OrderController(OrderService orderService, CustomerAccessGuard customerAccessGuard) {
         this.orderService = orderService;
+        this.customerAccessGuard = customerAccessGuard;
     }
 
     @PostMapping("/checkout")
     @ResponseStatus(HttpStatus.CREATED)
     public CustomerOrder checkout(@Valid @RequestBody CheckoutRequest request) {
+        customerAccessGuard.checkCustomerAccess(request.customerId());
         return orderService.checkout(request.customerId());
     }
 
     @GetMapping("/{orderId}")
     public CustomerOrder get(@PathVariable Long orderId) {
+        Long customerId = orderService.findCustomerIdByOrderId(orderId);
+        customerAccessGuard.checkCustomerAccess(customerId);
         return orderService.findById(orderId);
     }
 
     @GetMapping("/customer/{customerId}")
     public List<CustomerOrder> listByCustomer(@PathVariable Long customerId) {
+        customerAccessGuard.checkCustomerAccess(customerId);
         return orderService.findByCustomer(customerId);
     }
 

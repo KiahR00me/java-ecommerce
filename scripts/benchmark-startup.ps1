@@ -54,7 +54,7 @@ $commonArgs = "--spring.main.web-application-type=none --server.port=0 --spring.
 $results = @()
 $results += Invoke-StartupBenchmark -ProfileName "dev-fast" -AppArgs "--spring.profiles.active=dev-fast $commonArgs"
 
-$dockerStatus = docker info --format "{{.ServerVersion}}" 2>$null
+docker info --format "{{.ServerVersion}}" 2>$null | Out-Null
 if ($LASTEXITCODE -eq 0) {
     docker compose up -d postgres | Out-Null
     Wait-PostgresReady

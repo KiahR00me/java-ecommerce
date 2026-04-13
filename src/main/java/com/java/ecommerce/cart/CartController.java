@@ -1,5 +1,6 @@
 package com.java.ecommerce.cart;
 
+import com.java.ecommerce.common.CustomerAccessGuard;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -16,28 +17,34 @@ import org.springframework.web.bind.annotation.RestController;
 public class CartController {
 
     private final CartService cartService;
+    private final CustomerAccessGuard customerAccessGuard;
 
-    public CartController(CartService cartService) {
+    public CartController(CartService cartService, CustomerAccessGuard customerAccessGuard) {
         this.cartService = cartService;
+        this.customerAccessGuard = customerAccessGuard;
     }
 
     @GetMapping
     public Cart getCart(@PathVariable Long customerId) {
+        customerAccessGuard.checkCustomerAccess(customerId);
         return cartService.getOrCreateCart(customerId);
     }
 
     @PostMapping("/items")
     public Cart addItem(@PathVariable Long customerId, @Valid @RequestBody AddCartItemRequest request) {
+        customerAccessGuard.checkCustomerAccess(customerId);
         return cartService.addItem(customerId, request.productId(), request.quantity());
     }
 
     @DeleteMapping("/items/{productId}")
     public Cart removeItem(@PathVariable Long customerId, @PathVariable Long productId) {
+        customerAccessGuard.checkCustomerAccess(customerId);
         return cartService.removeItem(customerId, productId);
     }
 
     @DeleteMapping
     public void clear(@PathVariable Long customerId) {
+        customerAccessGuard.checkCustomerAccess(customerId);
         cartService.clear(customerId);
     }
 
