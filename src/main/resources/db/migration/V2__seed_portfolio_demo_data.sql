@@ -5,13 +5,13 @@ values
     (1003, 'Fitness', 'Home workout gear')
 on conflict (id) do nothing;
 
-insert into products (id, name, description, price, stock_quantity, active, category_id)
+insert into products (id, name, description, image_url, price, stock_quantity, active, category_id)
 values
-    (2001, 'Mechanical Keyboard Pro', 'Hot-swappable keyboard for developers', 129.00, 120, true, 1001),
-    (2002, 'UltraWide 34 Monitor', '3440x1440 monitor for productivity', 649.00, 35, true, 1002),
-    (2003, 'Adjustable Standing Desk', 'Electric standing desk with memory presets', 499.00, 22, true, 1002),
-    (2004, 'Smart Jump Rope', 'Bluetooth jump rope with analytics', 89.00, 80, true, 1003),
-    (2005, 'Noise-Cancelling Headphones', 'Over-ear ANC headphones for focus', 299.00, 45, true, 1001)
+    (2001, 'Mechanical Keyboard Pro', 'Hot-swappable keyboard for developers', 'https://images.unsplash.com/photo-1511467687858-23d96c32e4ae?auto=format&fit=crop&w=1200&q=80', 129.00, 120, true, 1001),
+    (2002, 'UltraWide 34 Monitor', '3440x1440 monitor for productivity', 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=1200&q=80', 649.00, 35, true, 1002),
+    (2003, 'Adjustable Standing Desk', 'Electric standing desk with memory presets', 'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?auto=format&fit=crop&w=1200&q=80', 499.00, 22, true, 1002),
+    (2004, 'Smart Jump Rope', 'Bluetooth jump rope with analytics', 'https://images.unsplash.com/photo-1599058918144-1ffabb6ab9a0?auto=format&fit=crop&w=1200&q=80', 89.00, 80, true, 1003),
+    (2005, 'Noise-Cancelling Headphones', 'Over-ear ANC headphones for focus', 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=1200&q=80', 299.00, 45, true, 1001)
 on conflict (id) do nothing;
 
 insert into customers (id, email, full_name)
