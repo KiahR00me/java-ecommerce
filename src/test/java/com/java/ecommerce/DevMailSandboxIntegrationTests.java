@@ -14,9 +14,9 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class DevMailSandboxIntegrationTests {
 
     private static final HttpClient HTTP = HttpClient.newHttpClient();
+    private final Map<String, String> tokenCache = new ConcurrentHashMap<>();
 
     @Autowired
     private CustomerRepository customerRepository;
@@ -91,9 +92,7 @@ class DevMailSandboxIntegrationTests {
                 .header("Accept", MediaType.APPLICATION_JSON_VALUE);
 
         if (username != null && password != null) {
-            String token = Base64.getEncoder()
-                    .encodeToString((username + ":" + password).getBytes(StandardCharsets.UTF_8));
-            builder.header("Authorization", "Basic " + token);
+            builder.header("Authorization", "Bearer " + loginAndGetToken(username, password));
         }
 
         if (body != null) {
@@ -104,5 +103,33 @@ class DevMailSandboxIntegrationTests {
         }
 
         return HTTP.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+    }
+
+    private String loginAndGetToken(String username, String password) throws Exception {
+        String cacheKey = username + ":" + password;
+        String cachedToken = tokenCache.get(cacheKey);
+        if (cachedToken != null && !cachedToken.isBlank()) {
+            return cachedToken;
+        }
+
+        String payload = """
+                {
+                  "username": "%s",
+                  "password": "%s"
+                }
+                """.formatted(username, password);
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("http://localhost:" + port + "/api/auth/login"))
+                .header("Accept", MediaType.APPLICATION_JSON_VALUE)
+                .header("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                .POST(HttpRequest.BodyPublishers.ofString(payload))
+                .build();
+
+        HttpResponse<String> response = HTTP.send(request, HttpResponse.BodyHandlers.ofString());
+        assertEquals(200, response.statusCode());
+        String accessToken = JsonPath.read(response.body(), "$.accessToken");
+        tokenCache.put(cacheKey, accessToken);
+        return accessToken;
     }
 }

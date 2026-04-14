@@ -17,6 +17,16 @@ SMTP endpoint for the app:
 
 ## 2) Run the app with sandbox profile
 
+Set security environment variables first (or copy values from `.env.example`):
+
+```powershell
+$env:APP_SECURITY_ADMIN_USERNAME="admin"
+$env:APP_SECURITY_ADMIN_PASSWORD="change-me-admin"
+$env:APP_SECURITY_CUSTOMER_USERNAME="customer@example.com"
+$env:APP_SECURITY_CUSTOMER_PASSWORD="change-me-customer"
+$env:APP_SECURITY_JWT_SECRET="replace-with-a-strong-32-char-minimum-secret"
+```
+
 ```powershell
 .\gradlew.bat bootRun --args="--spring.profiles.active=dev-mail-sandbox"
 ```
@@ -27,18 +37,27 @@ The profile group `dev-mail-sandbox` expands to:
 
 ## 3) Trigger verification email flow
 
-1. Create customer as admin:
+1. Login as admin and capture bearer token:
+```http
+POST /api/auth/login
+Content-Type: application/json
+
+{"username":"admin","password":"<your-admin-password>"}
+```
+
+2. Create customer as admin:
 ```http
 POST /api/customers
-Authorization: Basic admin/admin123
+Authorization: Bearer <accessToken>
 ```
-2. Send verification email as admin:
+
+3. Send verification email as admin:
 ```http
 POST /api/customers/{id}/send-verification
-Authorization: Basic admin/admin123
+Authorization: Bearer <accessToken>
 ```
-3. Check Mailpit UI and copy token from email body.
-4. Verify account:
+4. Check Mailpit UI and copy token from email body.
+5. Verify account:
 ```http
 POST /api/customers/verify
 ```

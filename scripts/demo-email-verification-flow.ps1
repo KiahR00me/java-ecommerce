@@ -11,19 +11,16 @@ if ([string]::IsNullOrWhiteSpace($Email)) {
     $Email = "demo-" + [DateTimeOffset]::UtcNow.ToUnixTimeSeconds() + "@example.com"
 }
 
-function New-BasicAuthHeader {
-    param(
-        [PSCredential]$Credential
-    )
-
-    $raw = "$($Credential.UserName):$($Credential.GetNetworkCredential().Password)"
-    $encoded = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($raw))
-    return "Basic $encoded"
-}
-
 if ($null -eq $AdminCredential) {
-    $secure = ConvertTo-SecureString "admin123" -AsPlainText -Force
-    $AdminCredential = New-Object System.Management.Automation.PSCredential ("admin", $secure)
+    $defaultAdminUsername = $env:APP_SECURITY_ADMIN_USERNAME
+    $defaultAdminPassword = $env:APP_SECURITY_ADMIN_PASSWORD
+
+    if ([string]::IsNullOrWhiteSpace($defaultAdminUsername) -or [string]::IsNullOrWhiteSpace($defaultAdminPassword)) {
+        throw "Admin credentials are required. Pass -AdminCredential or set APP_SECURITY_ADMIN_USERNAME and APP_SECURITY_ADMIN_PASSWORD."
+    }
+
+    $secure = ConvertTo-SecureString $defaultAdminPassword -AsPlainText -Force
+    $AdminCredential = New-Object System.Management.Automation.PSCredential ($defaultAdminUsername, $secure)
 }
 
 function Invoke-JsonApi {
@@ -50,12 +47,21 @@ function Invoke-JsonApi {
     }
 
     try {
+        $invokeParams = @{
+            Uri     = $Uri
+            Method  = $Method
+            Headers = $headers
+        }
+
         if ($null -ne $json) {
-            $response = Invoke-WebRequest -Uri $Uri -Method $Method -Headers $headers -Body $json
+            $invokeParams["Body"] = $json
         }
-        else {
-            $response = Invoke-WebRequest -Uri $Uri -Method $Method -Headers $headers
+
+        if ($PSVersionTable.PSEdition -eq "Desktop") {
+            $invokeParams["UseBasicParsing"] = $true
         }
+
+        $response = Invoke-WebRequest @invokeParams
     }
     catch {
         if ($_.Exception.Response) {
@@ -85,7 +91,23 @@ function Invoke-JsonApi {
     return $response.Content | ConvertFrom-Json
 }
 
-$adminAuth = New-BasicAuthHeader -Credential $AdminCredential
+Write-Host "[0/4] Logging in as admin..."
+$adminAccessTokenResponse = Invoke-JsonApi -Method "POST" -Uri "$BaseUrl/api/auth/login" -Body @{
+    username = $AdminCredential.UserName
+    password = $AdminCredential.GetNetworkCredential().Password
+} -Authorization $null -ExpectedStatusCodes @(200)
+
+$tokenType = [string]$adminAccessTokenResponse.tokenType
+if ([string]::IsNullOrWhiteSpace($tokenType)) {
+    $tokenType = "Bearer"
+}
+
+$accessToken = [string]$adminAccessTokenResponse.accessToken
+if ([string]::IsNullOrWhiteSpace($accessToken)) {
+    throw "Login did not return an access token."
+}
+
+$adminAuth = "$tokenType $accessToken"
 
 Write-Host "[1/4] Creating customer as admin..."
 $created = Invoke-JsonApi -Method "POST" -Uri "$BaseUrl/api/customers" -Body @{
