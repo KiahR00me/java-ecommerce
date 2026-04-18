@@ -1,5 +1,6 @@
 package com.java.ecommerce.common;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.Bean;
@@ -19,7 +20,12 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.http.HttpMethod;
+
+import java.util.List;
 
 @Configuration
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
@@ -31,8 +37,10 @@ public class SecurityConfig {
         SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter,
                         RateLimitFilter rateLimitFilter,
                         RestAuthenticationEntryPoint authenticationEntryPoint,
-                        RestAccessDeniedHandler accessDeniedHandler) throws Exception {
+                        RestAccessDeniedHandler accessDeniedHandler,
+                        CorsConfigurationSource corsConfigurationSource) throws Exception {
                 return http
+                                .cors(cors -> cors.configurationSource(corsConfigurationSource))
                                 .csrf(AbstractHttpConfigurer::disable)
                                 .httpBasic(AbstractHttpConfigurer::disable)
                                 .sessionManagement(session -> session
@@ -106,5 +114,20 @@ public class SecurityConfig {
         @Bean
         PasswordEncoder passwordEncoder() {
                 return new BCryptPasswordEncoder();
+        }
+
+        @Bean
+        CorsConfigurationSource corsConfigurationSource(
+                        @Value("${app.cors.allowed-origins:http://localhost:5173,http://localhost:3000}") String allowedOrigins) {
+                CorsConfiguration config = new CorsConfiguration();
+                config.setAllowedOrigins(List.of(allowedOrigins.split(",")));
+                config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+                config.setAllowedHeaders(List.of("*"));
+                config.setAllowCredentials(true);
+                config.setMaxAge(3600L);
+
+                UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+                source.registerCorsConfiguration("/api/**", config);
+                return source;
         }
 }

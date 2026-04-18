@@ -45,6 +45,18 @@ public class CustomerOrder {
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> items = new ArrayList<>();
 
+    @Column(length = 255)
+    private String paymentIntentId;
+
+    @Column(length = 60)
+    private String paymentMethod;
+
+    @Column(nullable = false, length = 40)
+    private String paymentStatus = "UNPAID";
+
+    @Column
+    private OffsetDateTime paidAt;
+
     public Long getId() {
         return id;
     }
@@ -79,5 +91,37 @@ public class CustomerOrder {
 
     public List<OrderItem> getItems() {
         return items;
+    }
+
+    public String getPaymentIntentId() {
+        return paymentIntentId;
+    }
+
+    public void setPaymentIntentId(String paymentIntentId) {
+        this.paymentIntentId = paymentIntentId;
+    }
+
+    public String getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public void setPaymentMethod(String paymentMethod) {
+        this.paymentMethod = paymentMethod;
+    }
+
+    public String getPaymentStatus() {
+        return paymentStatus;
+    }
+
+    public void setPaymentStatus(String paymentStatus) {
+        this.paymentStatus = paymentStatus;
+    }
+
+    public OffsetDateTime getPaidAt() {
+        return paidAt;
+    }
+
+    public void setPaidAt(OffsetDateTime paidAt) {
+        this.paidAt = paidAt;
     }
 }

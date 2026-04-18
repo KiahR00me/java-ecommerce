@@ -17,7 +17,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     @Query("""
             select p
             from Product p
-            join p.category c
+            join fetch p.category c
             where (:categoryId is null or c.id = :categoryId)
                 and (:active is null or p.active = :active)
                 and (:search is null

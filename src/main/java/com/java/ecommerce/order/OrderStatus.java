@@ -2,7 +2,10 @@ package com.java.ecommerce.order;
 
 public enum OrderStatus {
     PENDING,
+    PAYMENT_PROCESSING,
     PAID,
     SHIPPED,
-    CANCELLED
+    DELIVERED,
+    CANCELLED,
+    REFUNDED
 }

@@ -1,5 +1,6 @@
 package com.java.ecommerce.common;
 
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -7,6 +8,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class RequestRateLimiter {
+
+    private static final long DEFAULT_WINDOW_SECONDS = 60L;
 
     private final ConcurrentHashMap<String, WindowCounter> counters = new ConcurrentHashMap<>();
 
@@ -31,6 +34,17 @@ public class RequestRateLimiter {
         }
     }
 
+    @Scheduled(fixedRate = 120_000)
+    void evictStaleCounters() {
+        long now = Instant.now().getEpochSecond();
+        counters.entrySet().removeIf(entry -> {
+            WindowCounter counter = entry.getValue();
+            synchronized (counter) {
+                return (now - counter.windowStartEpochSecond) >= DEFAULT_WINDOW_SECONDS * 2;
+            }
+        });
+    }
+
     public record Decision(boolean allowed, long retryAfterSeconds) {
     }
 
@@ -44,3 +58,4 @@ public class RequestRateLimiter {
         }
     }
 }
+

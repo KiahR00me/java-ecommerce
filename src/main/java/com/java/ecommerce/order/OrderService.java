@@ -68,6 +68,10 @@ public class OrderService {
                     .orElseThrow(
                             () -> new ResourceNotFoundException("Product not found: " + cartItem.getProduct().getId()));
 
+            if (!product.isActive()) {
+                throw new BusinessException("Product is not available for purchase: " + product.getName());
+            }
+
             if (product.getStockQuantity() < cartItem.getQuantity()) {
                 throw new BusinessException("Insufficient stock for product: " + product.getId());
             }

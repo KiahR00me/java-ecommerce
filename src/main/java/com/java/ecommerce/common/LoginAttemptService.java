@@ -1,5 +1,6 @@
 package com.java.ecommerce.common;
 
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -65,6 +66,21 @@ public class LoginAttemptService {
         attempts.remove(key);
     }
 
+    @Scheduled(fixedRate = 300_000)
+    void evictStaleEntries() {
+        long now = Instant.now().getEpochSecond();
+        long failureWindow = securityProperties.getLoginThrottle().getFailureWindowSeconds();
+
+        attempts.entrySet().removeIf(entry -> {
+            AttemptState state = entry.getValue();
+            synchronized (state) {
+                boolean blockExpired = state.blockedUntilEpochSecond <= now;
+                boolean windowExpired = (now - state.firstFailureEpochSecond) >= failureWindow;
+                return blockExpired && (state.failures == 0 || windowExpired);
+            }
+        });
+    }
+
     private static final class AttemptState {
         private int failures;
         private long firstFailureEpochSecond;
@@ -77,3 +93,4 @@ public class LoginAttemptService {
         }
     }
 }
+
