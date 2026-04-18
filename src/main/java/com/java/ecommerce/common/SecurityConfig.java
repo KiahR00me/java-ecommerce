@@ -20,11 +20,14 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
+import org.springframework.security.web.header.writers.StaticHeadersWriter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.http.HttpMethod;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Configuration
@@ -45,6 +48,16 @@ public class SecurityConfig {
                                 .httpBasic(AbstractHttpConfigurer::disable)
                                 .sessionManagement(session -> session
                                                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                                .headers(headers -> {
+                                        headers.contentSecurityPolicy(csp -> csp
+                                                        .policyDirectives(
+                                                                        "default-src 'self'; base-uri 'self'; frame-ancestors 'none'; object-src 'none'; img-src 'self' data: https:"));
+                                        headers.referrerPolicy(referrer -> referrer
+                                                        .policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.SAME_ORIGIN));
+                                        headers.frameOptions(frame -> frame.deny());
+                                        headers.addHeaderWriter(new StaticHeadersWriter("Permissions-Policy",
+                                                        "camera=(), microphone=(), geolocation=()"));
+                                })
                                 .exceptionHandling(exceptions -> exceptions
                                                 .authenticationEntryPoint(authenticationEntryPoint)
                                                 .accessDeniedHandler(accessDeniedHandler))
@@ -120,9 +133,18 @@ public class SecurityConfig {
         CorsConfigurationSource corsConfigurationSource(
                         @Value("${app.cors.allowed-origins:http://localhost:5173,http://localhost:3000}") String allowedOrigins) {
                 CorsConfiguration config = new CorsConfiguration();
-                config.setAllowedOrigins(List.of(allowedOrigins.split(",")));
+                List<String> parsedAllowedOrigins = Arrays.stream(allowedOrigins.split(","))
+                                .map(String::trim)
+                                .filter(origin -> !origin.isEmpty())
+                                .toList();
+                if (parsedAllowedOrigins.isEmpty()) {
+                        parsedAllowedOrigins = List.of("http://localhost:5173", "http://localhost:3000");
+                }
+
+                config.setAllowedOrigins(parsedAllowedOrigins);
                 config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
                 config.setAllowedHeaders(List.of("*"));
+                config.setExposedHeaders(List.of("Retry-After"));
                 config.setAllowCredentials(true);
                 config.setMaxAge(3600L);
 
